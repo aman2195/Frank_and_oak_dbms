@@ -1,0 +1,311 @@
+###############################################
+#      STEP 1 : Creation of tables
+###############################################
+#This table contains general information about the customers (identification, contact info). It will help us identify each lient and allow us to know the addresses where we need to send the packages.
+CREATE TABLE Customer (
+customer_id varchar(100) not null,
+first_name varchar(150),
+last_name varchar(150),
+age numeric(4,0),
+gender varchar(10),
+email varchar(100),
+contact_no varchar(50),
+street_address varchar(100),
+city varchar(100),
+state varchar(100),
+country varchar(100),
+PRIMARY KEY(customer_id));
+
+#This table collects info about our clients' credit cards since our service is online and require online payments through a secure portal we have created.     
+CREATE TABLE Customer_Payment_info(
+Payment_id varchar(100) not null,
+customer_id varchar(100) not null,
+Payment_method varchar(50),
+Credit_card_number varchar(75),
+zip_code varchar(50),
+expiration_date date,
+is_authorized binary,
+PRIMARY KEY(Payment_id));
+            
+#This table helps us tailored our service to each customer by understanding their personal preferences.
+CREATE TABLE Customer_preferences 
+(Customer_id varchar(100) not null, order_pref varchar(50), fit varchar(50),preference_id varchar(100) not null,pref_stylis_id varchar(100),notes_id varchar(100), PRIMARY KEY(Customer_id,preference_id));
+
+#This table is the table master of patterns.Its listing all the shirts' patterns we have to offer to our clients accompanied by their unique codes. 
+CREATE TABLE pattern( pattern_code varchar(100), pattern varchar(250), primary key (pattern_code));
+
+#This table enables us to send specific shirts' patterns to meet our clients preferences.
+CREATE TABLE customer_pattern(customer_id varchar(100),pattern_code varchar(100), primary key (customer_id,pattern_code));
+
+#This table is the table master of colors.Its listing all the shirts' colors we have to offer to our clients accompanied by their unique codes.   
+CREATE TABLE color(color_code varchar(10) not null,color_name varchar(50), PRIMARY KEY(color_code,color_name));
+
+#This table enables us to send specific shirts' colors to meet our clients preferences.
+CREATE TABLE customer_color(customer_id varchar(100),color_code varchar(100), primary key (customer_id,color_code)); 
+
+#This table was created because customer size regroup multivalued attributes. Its cotains important informations about our clients measurements. This will help sending the right size of shirts to our clients; and avoiding a high number of return items.
+CREATE TABLE Customer_size(customer_id varchar(100) not null,height varchar(50), weight varchar(50),body_type varchar(50), PRIMARY KEY (customer_id)) ; 
+
+#This table introduces our "blackbox". Its has all the results we obtained thanks to our algorithm, which later help us design the right order for each client based on the score given by our algorithm.   
+CREATE TABLE Customer_preference_match(Resultid varchar(100), Customer_id varchar(100),item_id varchar(50), brand_match_score numeric(4), fit_score numeric(4), color_pref_score numeric(4),pattern_score numeric(4),stylist_id varchar(100),stylist_note text,note_to_customer text, PRIMARY KEY (Resultid)) ;
+ 
+#This table represents our employees which are stylysts, they are in chare of designing the shirts boxes for each client. This table keeps stylists' identification information, along with their assigned client they have to take care of.
+CREATE TABLE Stylists(Stylistid varchar(100) not null,First_name varchar(100),Last_name varchar(100),Email varchar(150),Contact_no varchar(100),Assigned_customer_prefid varchar(100), rating numeric(4), PRIMARY KEY(Stylistid));
+                                
+#This table possess inventories information related to our shirts. We can thus be aware of shirts shortage and know how much each kind of shirts costs.
+CREATE TABLE Shirt_Items(item_id varchar(100) not null,Supplier_id varchar(100),type varchar(100),color varchar(100),quantity numeric(6,2),size varchar(10),material varchar(50),brand varchar(50),item_price numeric(8,2), PRIMARY KEY (Item_id));
+
+#This table contains information about the differents suppliers we are dealing with to buy our shirts.
+CREATE TABLE Supplier(Supplier_id varchar(100) not null,Supplier_name varchar(150),supplier_address varchar(100),supplier_phone blob, PRIMARY KEY(Supplier_id));
+   
+#This table was created to link the table related to our supliers and the table related to our shirts' inventory
+CREATE TABLE Supplier_Shirt_items(Item_id varchar(100) not null,Supplier_id varchar(100), PRIMARY KEY(Item_id,Supplier_id)) ;
+
+#This table regroup all the differents orders placed by our stylists for their respectives assigned clients. We also have more financials information in this table since its contains the total amount of each order. This table initiates the creation of invoices and shipments and retruned items information.
+CREATE TABLE Orders(Order_id varchar(100) not null,Customer_id varchar(100),order_date date,payment_id varchar(100),item_count numeric(6,2),shipment_id varchar(10),stylist_id varchar(100),order_total numeric(6,2),status varchar(50),shipping_date date, PRIMARY KEY(Order_id)) ;
+    
+#This table was created to link the table related to the orders placed and the table related to our shirts' inventory 
+CREATE TABLE Orders_Shirt_items(Order_id varchar(100) not null,Itemd_id varchar(100) not null, primary key (Order_id,Itemd_id)) ;
+
+#This table collects information when a client returned an item he received.
+CREATE TABLE Returned_items 
+(Item_id varchar(100) not null,Order_id varchar(100) not null,shipment_id varchar(100),return_date date,is_exchange binary,reason_for_return text,other_feedback text, primary key(Item_id,Order_id));
+
+#This table contains shipments information when an order is approved and we need to deliver the box ordered.
+CREATE TABLE Shipment_info
+(Shipment_id varchar(100) not null, 
+Order_id varchar(100),
+carrier varchar(100),
+shipping_date date,
+expected_delivery_date date,
+shipping_amount numeric(8,2),
+returned_id varchar(50), 
+PRIMARY KEY(Shipment_id)) ;
+
+#This table contains invoices information generated for each order            
+CREATE TABLE Invoice(Invoice_id varchar(100) not null, Order_id varchar(100),Invoice_status varchar(50),Invoice_date date,tax_amount numeric(6,2),Invoice_amount_due numeric(6,2), primary key(Invoice_id));
+
+
+###############################################
+#      STEP 1.2 : Creation of Foreign Keys
+###############################################
+                         
+ALTER TABLE Customer_preferences
+ADD FOREIGN KEY (Customer_id) REFERENCES Customer(customer_id);
+
+ALTER TABLE Customer_size
+ADD FOREIGN KEY (customer_id) REFERENCES Customer(customer_id);
+
+ALTER TABLE Customer_Payment_info
+ADD FOREIGN KEY (customer_id) REFERENCES Customer(customer_id);
+
+ALTER TABLE Customer_preference_match
+ADD FOREIGN KEY (Customer_id) REFERENCES Customer(customer_id);
+
+ALTER TABLE Customer_preference_match
+ADD FOREIGN KEY (item_id) REFERENCES Shirt_Items(item_id);
+
+ALTER TABLE Customer_preference_match
+ADD FOREIGN KEY (stylist_id) REFERENCES Stylists(Stylistid);
+
+ALTER TABLE customer_color    
+ADD FOREIGN KEY (color_code) REFERENCES color(color_code); 
+
+ALTER TABLE customer_color    
+ADD FOREIGN KEY (customer_id) REFERENCES Customer(customer_id);
+
+ALTER TABLE customer_pattern  
+ADD FOREIGN KEY (pattern_code) REFERENCES   
+pattern(pattern_code);  
+
+ALTER TABLE customer_pattern    
+ADD FOREIGN KEY (customer_id) REFERENCES Customer(customer_id); 
+
+ALTER TABLE Shirt_Items 
+ADD FOREIGN KEY (Supplier_id) REFERENCES Supplier(Supplier_id); 
+
+ALTER TABLE Supplier_Shirt_items 
+ADD FOREIGN KEY (Supplier_id) REFERENCES Supplier(Supplier_id); 
+
+ALTER TABLE Supplier_Shirt_items 
+ADD FOREIGN KEY (Item_id) REFERENCES Shirt_Items(Item_id); 
+
+ALTER TABLE Orders 
+ADD FOREIGN KEY (Customer_id) REFERENCES Customer(customer_id); 
+
+ALTER TABLE Orders 
+ADD FOREIGN KEY (payment_id) REFERENCES Customer_Payment_info(Payment_id);
+
+ALTER TABLE Orders 
+ADD FOREIGN KEY (payment_id) REFERENCES Customer_Payment_info(Payment_id); 
+
+ALTER TABLE Orders 
+ADD FOREIGN KEY (stylist_id) REFERENCES Stylists(Stylistid); 
+               
+ALTER TABLE Orders_Shirt_items 
+ADD FOREIGN KEY (Order_id) REFERENCES Orders(Order_id); 
+
+ALTER TABLE Orders_Shirt_items 
+ADD FOREIGN KEY (Itemd_id) REFERENCES Shirt_Items(Item_id); 
+                                                               
+ALTER TABLE Returned_items 
+ADD FOREIGN KEY (Order_id) REFERENCES Orders(Order_id); 
+
+ALTER TABLE Returned_items 
+ADD FOREIGN KEY (Item_id) REFERENCES Shirt_Items(Item_id); 
+ 
+ALTER TABLE Shipment_info 
+ADD FOREIGN KEY (Order_id) REFERENCES Orders(Order_id); 
+
+ALTER TABLE Shipment_info 
+ADD FOREIGN KEY (returned_id) REFERENCES Returned_items(Order_id); 
+  
+ALTER TABLE Invoice 
+ADD FOREIGN KEY (Order_id) REFERENCES Orders(Order_id); 
+  
+
+###############################################
+#      STEP 2 : Add values into tables
+###############################################
+                       
+INSERT INTO Customer(customer_id,first_name,last_name,age,gender,email,contact_no,street_address,city,state,country) VALUES
+(1,'Animesh','Animesh',40,'male','animesh@gmail.com',5149231234,'1434 McTavish St','Montreal ','Quebec','Canada'),
+(2,'Jessica','Alba',20,'female','jessica@gmail.com',4389234321,'2000 Ste Catherine St','Montreal ','Quebec','Canada'),
+(3,'Warut','Khern-am-nuai',30,'male','warut@gmail.com',5149342312,'6 Decarie West Avenue','Montreal ','Quebec','Canada'),
+(4,'Monica','Toribio',45,'female','monica@gmail.com',5147552200,'37 Peel St','Montreal ','Quebec','Canada'),
+(5,'Juan Camilo','Serpa',34,'male','juan@gmail.com',5140129892,'352 Park Avenue','Montreal ','Quebec','Canada');
+  
+INSERT INTO Customer_preferences(Customer_id,order_pref,fit,pref_stylis_id,preference_id,notes_id)   VALUES
+(1,4,'loose',11,8005,2001),
+(2,3,'slim',12,8002,2002),
+(3,6,'slim',13,8003,2003),
+(4,10,'regular',14,8002,2004),
+(5,6,'loose',15,8005,2005);
+                           
+INSERT INTO  Customer_Payment_info(Payment_id,customer_id,Payment_method,Credit_card_number,zip_code,expiration_date,is_authorized) VALUES
+(9001, 1,'Paypal',5258751234123450,'H1T 1W9','2024-07-05',1),
+(9002, 2,'Mastercard',2412754321125040,'P2Y 8V3','2019-04-12',0),
+(9003, 3,'American Express',4760757777123450,'J1J 2S3','2022-12-11',1),
+(9004, 4,'Visa',5634124375121240,'H4C 2V7','2023-02-28',1),
+(9005, 5,'Mastercard',5425502000309870,'L9P 2R5','2014-10-19',1);
+                                    
+INSERT INTO  pattern(pattern_code,pattern)
+VALUES 
+(1001,'Floral'),
+(1002,'Polka Dot'),
+(1003,'Graphic'),
+(1004,'Plaid/Check'),
+(1005,'All Over Print'),
+(1006,'Stripes');
+                          
+INSERT INTO  customer_pattern(customer_id,pattern_code) VALUES
+(1,1001),
+(2,1002),
+(3,1003),
+(4,1004),
+(5,1005),
+(1,1006),
+(2,1006);
+    
+INSERT INTO  color (color_code,color_name) VALUES
+(0001,'red'),
+(0002,'blue'),
+(0003,'green'),
+(0004,'yellow'),
+(0005,'black'),
+(0006,'indigo'),
+(0007,'brown'),
+(0008,'grey'),
+(0009,'fushia'),
+(00010,'burgundi'),
+(00011,'violet'),
+(00012,'pink');                                               
+                                                               
+INSERT INTO Customer_size(customer_id,height,weight,body_type) VALUES
+(1,180,83,'slim'),
+(2,167,53,'average'),
+(3,210,110,'athletic'),
+(4,155,54,'slim'),
+(5,184,78,'well-built');                         
+                                                               
+INSERT INTO Stylists(Stylistid,First_name,Last_name,Email,Contact_no,Assigned_customer_prefid,rating) VALUES
+(8001,'Karl','Lagerfeld','karl@stylist.com',5144152322,6.7,5),
+(8002,'Coco','Channel','coco@stylist.com',5140009876,2.4,3.2),
+(8003,'Miley','Cyrus','miley@stylist.com',5146700042,3,3.8),
+(8004,'Scoobido','Thedog','scoobido@stylist.com',5147785534,8,3.9),
+(8005,'Mohammed','Ali','mohammed@stylist.com',5140983442,1.5,2.3);
+   
+INSERT INTO Supplier(Supplier_id,Supplier_name,supplier_address,supplier_phone) VALUES
+(3001,'Ali Baba','Crescent  street Montreal QC  H3Z 2Y7 Canada',4384154565),
+(3002,'Alanic Clothing','Atwater  boulevard Montreal QC  F1Z 3O7 Canada',5140006533),
+(3003,'Zazzle','St Maurice street Laval QC  P0E 4V2 Canada',4386709321),
+(3004,'Apparel Win','Union  street Verdun QC  H5C 5R1 Canada',5147785456),
+(3005,'Shirt 2000','Lachute Avenue Montreal QC  T7P 3D9 Canada',5148577400);                            
+                                                               INSERT INTO  Shirt_Items(Item_id,Supplier_id,type,color,quantity,size,material,brand,item_price) VALUES
+(7001,3001,'Classic','red',4,'XS',3.233,'H&M',12.99),
+(7002,3001,'Casual','green',20,'XL',2.287,'Zara',14.60),
+(7003,3002,'Creative','black',2,'M',2.372,'Aritzia',24.30),
+(7004,3003,'Classic','grey',14,'M',2.019,'Nike',11.99),
+(7005,3001,'Casual','violet',7,'L',3.281,'GAP',8.90);
+                                                               
+INSERT INTO  Customer_preference_match(Resultid, Customer_id, item_id,brand_match_score,fit_score,color_pref_score,pattern_score,stylist_id,stylist_note,note_to_customer) VALUES (6001, 1, 7001,3.123,4.999,2.783,3.233,8005,'I am looking for a change','What style speaks to you'),
+(6002, 2, 7002,4.212,1.567,2.909,2.287,8002,'I just want cheap clothes"','"Can you tell us more on your budget?'),
+(6003, 3, 7003,1.897,4.121,4.655,2.372,8003,'I love ethical and man-made shirts','Perfect we have a selection of ethical shirts for you'),
+(6004, 4, 7005,2.453,3.456,1.929,2.019,8002,'Need a relooking, help"','"Why do you want to change'),
+(6005, 5, 7005,3.343,3.987,3.982,3.281,8005,'Looking for shirts for my work','"Semi-formal or formal shirts?');
+                                                               
+INSERT INTO  Supplier_Shirt_items(Supplier_id,Item_id) VALUES
+(3001,7001),
+(3002,7002),
+(3003,7003),
+(3004,7004),
+(3005,7005);                                                 
+
+INSERT INTO  Orders(Order_id,Customer_id,order_date,payment_id,item_count,shipment_id,stylist_id,order_total,status,shipping_date) VALUES
+(4001,1,'2019-09-10',9001,4,2001,8005,273.7,'Shipped','2019-09-14'),
+(4002,2,'2019-11-01',9002,6,2002,8002,141.45,'On Hold','2019-05-11'),
+(4003,3,'2019-05-21',9003,9,2003,8003,125.35,'Shipped','2019-05-25'),
+(4004,4,'2019-12-22',9004,5,2004,8002,103.5,'Shipped','2019-01-01'),
+(4005,5,'2019-05-12',9005,10,2005,8005,62.1,'Cancelled','2019-05-15'); 
+     
+INSERT INTO  Orders_Shirt_items(Order_id,Itemd_id) VALUES
+(4001,7001),
+(4002,7002),
+(4003,7003),
+(4004,7004),
+(4005,7005);                                                                                          
+INSERT INTO  Returned_items(Item_id,Order_id,shipment_id,return_date,is_exchange,reason_for_return,other_feedback) VALUES
+(7001,4001,1001,'2019-01-26',1,'Not specified',NULL),
+(7002,4002,1002,'2017-12-03',1,'Not specified',NULL),
+(7003,4003,1003,'2017-08-30',1,'"Not my colour"',NULL),
+(7004,4004,1004,'2018-01-01',0,'"Not my style"',NULL),
+(7005,4005,1005,'2017-03-13',1,'Not specified',NULL);         
+   
+INSERT INTO Shipment_info(Shipment_id,returned_id,carrier,shipping_date,expected_delivery_date,shipping_amount) VALUES
+(2001,4003,'Fedex','2019-09-14','2019-09-15',45),
+(2002,4002,'Fast Carrier','2019-11-05','2019-11-06',45),
+(2003,4001,'Fast Carrier','2019-05-25','2019-05-30',45),
+(2004,4001,'Fedex','2019-01-01','2019-01-02',45),
+(2005,4005,'Fedex','2019-05-15','2019-05-17',45);     
+                                         
+INSERT INTO  Invoice (Invoice_id,Order_id,Invoice_status,Invoice_date,tax_amount,Invoice_amount_due) VALUES
+(12001,4003,'Paid','2019-09-15',273.7,238),
+(12002,4002,'On Hold','2019-11-06',141.45,123),
+(12003,4001,'Paid','2019-05-30',125.35,109),
+(12004,4001,'Paid','2019-01-02',103.5,90),
+(12005,4005,'Cancelled','2019-05-17',62.1,54);  
+                                               
+INSERT INTO  customer_color(color_code,customer_id) VALUES
+(0001,1),
+(0002,2),
+(0003,3),
+(0004,4),
+(0005,5),
+(0006,1),
+(0007,2),
+(0008,3),
+(0009,4),
+(00010,5),
+(00011,1),
+(00012,2);                            
+                       
