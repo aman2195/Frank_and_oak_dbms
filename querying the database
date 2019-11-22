@@ -1,0 +1,156 @@
+#Our queries are focused on four pillars driving our company performance: Sales, Algorithm efficiency,Employees, Manufacturers & Inventory
+
+###############################################
+#                 Sales 
+###############################################
+
+
+
+# 1. Show list of Customers with the number of items bought
+
+
+Select   c.first_name,c.last_name,o.item_count
+from 
+Customer as c left join 
+ Orders
+ as o                                                                 
+on c.Customer_id = o.Customer_id
+left join 
+Orders_Shirt_items as os on o.Order_id = os.Order_id  
+group by c.first_name,c.last_name,o.item_count;
+                                                                        
+
+
+# 2. What is the revenue of Frank and Oak in the last month?
+#Objective: We want to captute if our sales performance was good or not.
+Select SUM(item_count*item_price) from Shirt_Items si inner join (select o.item_count, o.Order_id, osi.Itemd_id, o.shipping_date from Orders_Shirt_items osi inner join Orders o
+On o.Order_id=osi.Order_id) oosi on oosi.Itemd_id=si.Item_id 
+Where Month(oosi.shipping_date)=Month(CURRENT_DATE())-1 ; 
+
+          
+# 3. How many medium T-shirts were sold in the last month? 
+#Objective: We want to see if medium shirts are good                                   
+Select count(sifoosi.Order_id) from Shirt_Items si inner join  
+(Select sif.Shipment_id, sif.returned_id, oosi.Order_id, oosi.Itemd_id from Shipment_info sif inner join (select osi.Order_id, osi.Itemd_id,o.shipment_id from Orders_Shirt_items osi inner join Orders o on o.Order_id=osi.Order_id) oosi on sif.Shipment_id=oosi.shipment_id) sifoosi on sifoosi.Itemd_id=si.item_id 
+Where si.size like 'M' and sifoosi.returned_id=Null; 
+                                  
+                                  
+#4. Show all customers who returned items and their counts?
+Select o.Customer_id  , count(sif.returned_id)from Orders o inner join Shipment_info sif on sif.Shipment_id=o.shipment_id   
+Group by o.Customer_id  ;
+                                     
+                                  
+# 5.  Print orders whose difference between shipping date and expected delivery date is greater than 90 days
+#Objective:                                        
+Select o.Customer_id from Orders o inner join Shipment_info sif on o.shipment_id=sif.Shipment_id Where month(sif.shipping_date)+3>month(sif.expected_delivery_date);
+                                        
+                                        
+###############################################
+#            Algorithm Efficiency 
+###############################################
+
+# 1. How many returns have we recorded so far? 
+#Objective:                                        
+Select count(ri.Item_id) from Returned_items ri where is_exchange=0;                                         
+# 2. Please return customer and their preferred patterns for customers whose color preference score is higher than 2 
+
+
+Select a.*, b.pattern_score from Customer_preferences as a inner join 
+(Select * from Customer_preference_match where pattern_score > 2) as b 
+on a.Customer_id = b.Customer_id ;
+
+ 
+
+                           
+                                        
+# 3. How many customers have a color_pref_score and brand_match_score above 90%? 
+#Objective:                                        
+Select count(customer_id) from Customer_preference_match where color_pref_score > 90 and brand_match_score>90;                                     
+                                        
+# 4. What is the max score for the customer?
+#Objective:                                        
+Select Max(fit_score) from Customer_preference_match;                                         
+                                        
+# 5. What is the min score for the customer? 
+#Objective:                                        
+Select Min(fit_score) from Customer_preference_match; 
+                             
+                                
+###############################################
+#                 Employees 
+###############################################
+
+# 1. Which stylist should be appointed “Stylist of the month”? (Stylist with a lot of clients and good reviews) 
+#Objective:                                        
+SELECT * FROM Stylists WHERE rating IN (SELECT MAX(rating) FROM Stylists);                      
+                                        
+                                        
+# 2. How many times each stylist is picked by the algorithm?
+#Objective:                                        
+SELECT s.First_name,s.Last_name,COUNT(cpm.stylist_id) FROM Customer_preference_match cpm, Stylists s 
+WHERE s.Stylistid = cpm.stylist_id 
+GROUP BY cpm.stylist_id,s.First_name,s.Last_name;   
+                                        
+                                        
+# 3. How many stylists do we have?
+#Objective:                                        
+SELECT  COUNT(Stylistid) FROM Stylists ; 
+                                        
+                                      
+# 4. Who is the stylist who needs to be fired?
+#Objective:                                        
+SELECT * FROM Stylists WHERE rating IN (SELECT MIN(rating) FROM Stylists); 
+                                        
+                                        
+# 5. Are there any suppliers with the same name as stylist?
+#Objective:                                        
+SELECT First_name,Last_name  
+FROM Stylists s  
+WHERE EXISTS (SELECT Supplier_name FROM Supplier  
+WHERE  s.First_name  like '%'||Supplier_name||'%'  
+OR s.Last_name  like '%'||Supplier_name||'%' ); 
+                                        
+      
+###############################################
+#           Manufacturer & Inventory 
+###############################################
+
+ # 1. For each item, what is the total quantity of shirts left in our inventory for the Classic type? 
+#Objective:
+SELECT s.Item_id,s.type,s.color,SUM(s.quantity),s.size,s.material,s.brand 
+FROM Shirt_Items AS s 
+WHERE s.type = "Classic" 
+GROUP BY s.Item_id ; 
+                                        
+                                        
+# 2. Please print a list of all shirts and their suppliers.
+#Objective:      
+                                        
+Select item_id,brand,supplier_name from Shirt_Items si inner join Supplier s on si.supplier_id= s.Supplier_id ; 
+                                        
+# 3. What is the least purchased size in our warehouse?                             
+                                      
+select si.size from Orders_Shirt_items osi, Orders o,Shirt_Items si
+Where osi.Order_id = o.Order_id
+and si.Item_id = osi.itemd_id
+order by o.item_count limit 1;                                      
+                                        
+# 4. List all orders with item count greater than 50
+#Objective:                                        
+                                        
+select Order_id from Orders where item_count>50;
+                                   
+                                        
+# 5. How many distinct suppliers are we dealing with?
+#Objective:                                        
+Select count(distinct Supplier_name) from Supplier;                    
+
+                                    
+
+                                      
+
+
+
+                                      
+   
+
